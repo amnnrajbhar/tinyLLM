@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TinyGPT</title>
+    <title>mannLLM</title>
     <style>
         :root {
             --bg: radial-gradient(ellipse at top left, #1c1c2e, #0a0a0f 60%);
@@ -86,6 +86,8 @@
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--divider);
             flex-shrink: 0;
+            position: relative;
+            z-index: 50;
         }
 
         .topbar-left {
@@ -99,7 +101,10 @@
             border-radius: 50%;
             background: linear-gradient(135deg, var(--accent), #bf5af2);
             display: flex; align-items: center; justify-content: center;
-            font-size: 16px;
+            font-size: 14px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.5px;
             flex-shrink: 0;
         }
 
@@ -126,8 +131,24 @@
         .topbar-right {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
+
+        .icon-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            width: 34px; height: 34px;
+            cursor: pointer;
+            font-size: 15px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s, background 0.2s;
+            flex-shrink: 0;
+        }
+        .icon-btn:hover { color: var(--text-primary); background: var(--glass-border); }
 
         .toggle-btn {
             background: var(--glass-bg);
@@ -143,6 +164,196 @@
             transition: color 0.2s;
         }
         .toggle-btn:hover { color: var(--text-primary); }
+
+        /* Options dropdown */
+        .options-wrap { position: relative; }
+
+        .dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: #16162a;
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            min-width: 200px;
+            z-index: 9999;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+            animation: fadeUp 0.15s ease;
+            padding: 6px 0;
+        }
+        [data-theme="light"] .dropdown { background: rgba(245,245,250,0.97); }
+        .dropdown.open { display: block; }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            font-size: 14px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background 0.15s;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            white-space: nowrap;
+        }
+        .dropdown-item:hover { background: var(--glass-bg); }
+        .dropdown-item:disabled { opacity: 0.5; cursor: not-allowed; }
+        .dropdown-item.danger { color: #ff453a; }
+
+        .dropdown-divider { height: 1px; background: var(--divider); margin: 4px 0; }
+
+        .train-status {
+            padding: 6px 16px 10px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: none;
+        }
+
+        /* Info drawer */
+        .drawer-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 200;
+            backdrop-filter: blur(4px);
+        }
+        .drawer-overlay.open { display: block; }
+
+        .drawer {
+            position: fixed;
+            top: 0; right: -360px;
+            width: 320px;
+            max-width: 90vw;
+            height: 100%;
+            background: var(--topbar-bg);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-left: 1px solid var(--glass-border);
+            z-index: 201;
+            display: flex;
+            flex-direction: column;
+            transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+            overflow-y: auto;
+        }
+        .drawer.open { right: 0; }
+
+        .drawer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--divider);
+            flex-shrink: 0;
+        }
+        .drawer-header h3 { font-size: 16px; font-weight: 600; }
+
+        .drawer-close {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            width: 30px; height: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-secondary);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .drawer-close:hover { color: var(--text-primary); }
+
+        .drawer-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+        .info-avatar {
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #bf5af2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: -1px;
+            margin: 0 auto;
+        }
+
+        .info-name {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .info-sub {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .info-section { display: flex; flex-direction: column; gap: 10px; }
+
+        .info-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .info-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .info-card a { color: var(--accent); text-decoration: none; }
+
+        .stat-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .stat-box {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-val {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-key {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+        .tag {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
 
         /* Messages area */
         .messages {
@@ -184,6 +395,9 @@
 
         .msg-row.bot .msg-avatar {
             background: linear-gradient(135deg, var(--accent), #bf5af2);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
         }
 
         .msg-row.user .msg-avatar {
@@ -313,9 +527,121 @@
         }
         .footer a { color: var(--accent); text-decoration: none; }
 
-        @media (max-width: 480px) {
-            .bubble { max-width: 85%; }
-            .messages { padding: 16px 12px; }
+        /* Training overlay */
+        .train-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 500;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.55);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .train-overlay.active { display: flex; }
+
+        /* Green scan line sweeping top to bottom */
+        .scan-line {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, #30d158 30%, #30d158 70%, transparent 100%);
+            box-shadow: 0 0 12px 3px rgba(48, 209, 88, 0.6), 0 0 40px 8px rgba(48, 209, 88, 0.2);
+            z-index: 501;
+            display: none;
+            animation: scanDown 2.2s ease-in-out infinite;
+        }
+        .train-overlay.active ~ .scan-line,
+        .scan-line.active { display: block; }
+
+        @keyframes scanDown {
+            0%   { top: 0; opacity: 0; }
+            5%   { opacity: 1; }
+            95%  { opacity: 1; }
+            100% { top: 100vh; opacity: 0; }
+        }
+
+        .train-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 24px;
+            padding: 36px 40px;
+            text-align: center;
+            max-width: 320px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: fadeUp 0.3s ease;
+        }
+
+        .cancel-btn {
+            margin-top: 20px;
+            padding: 9px 24px;
+            background: rgba(255, 69, 58, 0.15);
+            border: 1px solid rgba(255, 69, 58, 0.4);
+            border-radius: 10px;
+            color: #ff453a;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .cancel-btn:hover { background: rgba(255, 69, 58, 0.28); }
+        .cancel-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .train-spinner {
+            width: 56px; height: 56px;
+            border-radius: 50%;
+            border: 3px solid var(--glass-border);
+            border-top-color: #30d158;
+            animation: spin 0.9s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .train-title {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .train-msg {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            min-height: 40px;
+        }
+
+        .scan-bar {
+            width: 100%;
+            height: 3px;
+            background: var(--glass-border);
+            border-radius: 2px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .scan-fill {
+            height: 100%;
+            width: 40%;
+            background: linear-gradient(90deg, transparent, #30d158, transparent);
+            animation: scan 1.6s ease-in-out infinite;
+            border-radius: 2px;
+        }
+
+        @keyframes scan {
+            0%   { transform: translateX(-100%); }
+            100% { transform: translateX(350%); }
         }
     </style>
 </head>
@@ -325,25 +651,52 @@
     <!-- Top bar -->
     <div class="topbar">
         <div class="topbar-left">
-            <div class="avatar">🤖</div>
+            <div class="avatar">T</div>
             <div class="topbar-info">
-                <h2>Aman's TinyGPT</h2>
+                <h2>TinyGPT</h2>
                 <span><span class="online-dot"></span> Online</span>
             </div>
         </div>
         <div class="topbar-right">
-            <button class="toggle-btn" id="themeBtn">
-                <span id="themeIcon">☀️</span>
-                <span id="themeLabel">Light</span>
-            </button>
+            <button class="icon-btn" id="infoBtn" title="About mannLLM">ℹ️</button>
+            <div class="options-wrap">
+                <button class="icon-btn" id="optionsBtn" title="Options">⚙️</button>
+                <div class="dropdown" id="dropdown">
+                    <button class="dropdown-item" id="themeItem"><span id="themeIcon">☀️</span> <span id="themeLabel">Light Mode</span></button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" id="clearBtn">🗑️ Clear Chat</button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" id="trainBtn">🏋️ Train Model</button>
+                    <div id="trainStatus" class="train-status"></div>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" onclick="window.open('https://amnnrajbhar.github.io/info/','_blank')">🔗 Portfolio</button>
+                    <button class="dropdown-item" onclick="window.open('https://github.com/amnnrajbhar/tinyLLM','_blank')">💻 GitHub</button>
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- Training overlay -->
+    <div class="train-overlay" id="trainOverlay">
+        <div class="train-card">
+            <div class="train-spinner"></div>
+            <div class="train-title">Training mannLLM</div>
+            <div class="train-msg" id="trainOverlayMsg">Model is training on Aman's data...<br>This may take a few minutes.</div>
+            <div class="scan-bar"><div class="scan-fill"></div></div>
+            <button class="cancel-btn" id="cancelBtn">Cancel Training</button>
+        </div>
+    </div>
+    <div class="scan-line" id="scanLine"></div>
 
     <!-- Messages -->
     <div class="messages" id="messages">
         <div class="msg-row bot">
             <div class="msg-avatar">🤖</div>
-            <div class="bubble">Hi! I'm Aman's personal AI. Ask me anything about Aman — his skills, projects, or experience. 👋</div>
+            <div class="bubble">Hi! I'm <strong>TinyGPT</strong> — Aman's personal AI. Ask me anything about Aman — his skills, projects, or experience.</div>
+        </div>
+        <div class="msg-row bot" id="trainingWarning">
+            <div class="msg-avatar" style="background:rgba(255,196,0,0.15);color:#ffd60a;font-size:14px;">⚠️</div>
+            <div class="bubble" style="border-color:rgba(255,214,10,0.3);color:#ffd60a;font-size:13px;background:rgba(255,214,10,0.06);">Model training is currently in progress. Responses may be limited until training completes.</div>
         </div>
     </div>
 
@@ -365,16 +718,84 @@
 
 </div>
 
+<!-- Info Drawer -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<div class="drawer" id="drawer">
+    <div class="drawer-header">
+        <h3>About mannLLM</h3>
+        <button class="drawer-close" id="drawerClose">✕</button>
+    </div>
+    <div class="drawer-body">
+        <div>
+            <div class="info-avatar">M</div>
+            <div class="info-name">mannLLM</div>
+            <div class="info-sub">Personal AI by Aman Rajbhar</div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-label">About</div>
+            <div class="info-card">A miniature language model built from scratch using PyTorch. Trained exclusively on Aman Rajbhar's portfolio, resume, and professional data.</div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-label">Model Stats</div>
+            <div class="stat-row">
+                <div class="stat-box"><div class="stat-val">128</div><div class="stat-key">Embed Dim</div></div>
+                <div class="stat-box"><div class="stat-val">4</div><div class="stat-key">Attn Heads</div></div>
+                <div class="stat-box"><div class="stat-val">4</div><div class="stat-key">Layers</div></div>
+                <div class="stat-box"><div class="stat-val">8K</div><div class="stat-key">Train Steps</div></div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-label">Architecture</div>
+            <div class="tag-row">
+                <span class="tag">Character-level</span>
+                <span class="tag">Transformer</span>
+                <span class="tag">Multi-Head Attention</span>
+                <span class="tag">Top-K Sampling</span>
+                <span class="tag">PyTorch</span>
+                <span class="tag">FastAPI</span>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-label">Creator</div>
+            <div class="info-card">Built by <a href="https://amnnrajbhar.github.io/info/" target="_blank">Aman Rajbhar</a> — Software Engineer at Clover Infotech, Mumbai.<br><br>📧 amanrajbhar289@gmail.com</div>
+        </div>
+    </div>
+</div>
+
 <script>
     const API_URL   = '/api/generate';
     const messages  = document.getElementById('messages');
     const input     = document.getElementById('userInput');
     const sendBtn   = document.getElementById('sendBtn');
-    const themeBtn  = document.getElementById('themeBtn');
-    const themeIcon = document.getElementById('themeIcon');
-    const themeLabel= document.getElementById('themeLabel');
 
-    // Auto-resize textarea
+    // Check training status on load and hide warning if not training
+    (async () => {
+        try {
+            const res  = await fetch('/api/train/status');
+            const data = await res.json();
+            if (!data.running) {
+                const w = document.getElementById('trainingWarning');
+                if (w) w.remove();
+            }
+        } catch {}
+    })();
+
+    // Save chat to localStorage
+    function saveChat(role, text) {
+        const history = JSON.parse(localStorage.getItem('mannllm_chat') || '[]');
+        history.push({ role, text });
+        // Keep last 200 messages only
+        if (history.length > 200) history.splice(0, history.length - 200);
+        localStorage.setItem('mannllm_chat', JSON.stringify(history));
+    }
+
+    function getChatHistory() {
+        return JSON.parse(localStorage.getItem('mannllm_chat') || '[]');
+    }
     input.addEventListener('input', () => {
         input.style.height = 'auto';
         input.style.height = Math.min(input.scrollHeight, 120) + 'px';
@@ -389,12 +810,152 @@
 
     // Theme
     let isDark = true;
-    themeBtn.addEventListener('click', () => {
+    const themeIcon  = document.getElementById('themeIcon');
+    const themeLabel = document.getElementById('themeLabel');
+    document.getElementById('themeItem').addEventListener('click', () => {
         isDark = !isDark;
         document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
         themeIcon.textContent  = isDark ? '☀️' : '🌙';
-        themeLabel.textContent = isDark ? 'Light' : 'Dark';
+        themeLabel.textContent = isDark ? 'Light Mode' : 'Dark Mode';
     });
+
+    // Options dropdown
+    const optionsBtn = document.getElementById('optionsBtn');
+    const dropdown   = document.getElementById('dropdown');
+    optionsBtn.addEventListener('click', e => { e.stopPropagation(); dropdown.classList.toggle('open'); });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+
+    // Clear chat
+    document.getElementById('clearBtn').addEventListener('click', () => {
+        messages.innerHTML = '';
+        localStorage.removeItem('mannllm_chat');
+        addMessage('bot', 'Chat cleared! Ask me anything about Aman. 👋');
+        dropdown.classList.remove('open');
+    });
+
+    // Train model
+    const trainBtn         = document.getElementById('trainBtn');
+    const trainStatus      = document.getElementById('trainStatus');
+    const trainOverlay     = document.getElementById('trainOverlay');
+    const trainOverlayMsg  = document.getElementById('trainOverlayMsg');
+    const scanLine         = document.getElementById('scanLine');
+    const cancelBtn        = document.getElementById('cancelBtn');
+    let statusPoller = null;
+
+    cancelBtn.addEventListener('click', async () => {
+        cancelBtn.disabled       = true;
+        cancelBtn.textContent    = 'Cancelling...';
+        trainOverlayMsg.innerHTML = 'Sending cancel signal...';
+        try {
+            await fetch('/api/train/cancel', { method: 'POST' });
+        } catch {}
+    });
+
+    function showTrainOverlay(msg) {
+        trainOverlayMsg.textContent = '';
+        trainOverlay.classList.add('active');
+        scanLine.classList.add('active');
+        dropdown.classList.remove('open');
+        sendBtn.disabled = true;
+        input.disabled   = true;
+    }
+
+    let typeInterval = null;
+    function typeMsg(msg) {
+        if (typeInterval) clearInterval(typeInterval);
+        trainOverlayMsg.textContent = '';
+        let i = 0;
+        typeInterval = setInterval(() => {
+            trainOverlayMsg.textContent += msg[i];
+            i++;
+            if (i >= msg.length) {
+                clearInterval(typeInterval);
+                // After typing, add the note
+                setTimeout(() => {
+                    const note = document.createElement('div');
+                    note.style.cssText = 'margin-top:8px;font-size:11px;opacity:0.4;';
+                    note.textContent   = 'Chat is disabled during training.';
+                    trainOverlayMsg.appendChild(note);
+                }, 200);
+            }
+        }, 28);
+    }
+
+    function hideTrainOverlay() {
+        trainOverlay.classList.remove('active');
+        scanLine.classList.remove('active');
+        if (typeInterval) clearInterval(typeInterval);
+        cancelBtn.disabled    = false;
+        cancelBtn.textContent = 'Cancel Training';
+        sendBtn.disabled = false;
+        input.disabled   = false;
+        input.focus();
+    }
+
+    function pollTrainStatus() {
+        statusPoller = setInterval(async () => {
+            try {
+                const res  = await fetch('/api/train/status');
+                const data = await res.json();
+                if (data.running) {
+                    trainOverlayMsg.innerHTML = data.message + '<br><br><small style="opacity:0.5">Chat is disabled during training.</small>';
+                } else {
+                    clearInterval(statusPoller);
+                    hideTrainOverlay();
+                    const w = document.getElementById('trainingWarning');
+                    if (w) w.remove();
+                    trainBtn.disabled    = false;
+                    trainBtn.textContent = '🏋️ Train Model';
+                    trainStatus.style.display = 'block';
+                    trainStatus.textContent   = (data.message.includes('cancel') ? '🚫 ' : '✅ ') + data.message;
+                    addMessage('bot', data.message.includes('cancel') ? '🚫 Training was cancelled.' : '✅ Training complete! I have been updated with the latest data.');
+                }
+            } catch { clearInterval(statusPoller); hideTrainOverlay(); }
+        }, 3000);
+    }
+
+    trainBtn.addEventListener('click', async () => {
+        trainBtn.disabled    = true;
+        trainBtn.textContent = '⏳ Starting...';
+        const history = getChatHistory();
+        const pairs   = Math.floor(history.length / 2);
+        const baseMsg = pairs > 0
+            ? `Training on your ${pairs} chat exchange${pairs > 1 ? 's' : ''} + Aman's portfolio data...`
+            : 'Training on Aman\'s portfolio data...';
+
+        try {
+            const res  = await fetch('/api/train', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_history: history })
+            });
+            const data = await res.json();
+            if (data.status === 'started') {
+                showTrainOverlay(baseMsg);
+                typeMsg(baseMsg);
+                pollTrainStatus();
+            } else {
+                trainBtn.disabled    = false;
+                trainBtn.textContent = '🏋️ Train Model';
+                trainStatus.style.display = 'block';
+                trainStatus.textContent   = data.message;
+            }
+        } catch (err) {
+            trainBtn.disabled    = false;
+            trainBtn.textContent = '🏋️ Train Model';
+            trainStatus.style.display = 'block';
+            trainStatus.textContent   = 'Error: ' + err.message;
+        }
+    });
+
+    // Info drawer
+    const drawer        = document.getElementById('drawer');
+    const drawerOverlay = document.getElementById('drawerOverlay');
+    function openDrawer()  { drawer.classList.add('open'); drawerOverlay.classList.add('open'); }
+    function closeDrawer() { drawer.classList.remove('open'); drawerOverlay.classList.remove('open'); }
+    document.getElementById('infoBtn').addEventListener('click', openDrawer);
+    document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+    drawerOverlay.addEventListener('click', closeDrawer);
 
     function addMessage(role, text, isError = false) {
         const row = document.createElement('div');
@@ -402,11 +963,18 @@
 
         const avatar = document.createElement('div');
         avatar.className = 'msg-avatar';
-        avatar.textContent = role === 'user' ? '🧑' : '🤖';
+        avatar.textContent = role === 'user' ? 'U' : 'T';
 
         const bubble = document.createElement('div');
         bubble.className = 'bubble' + (isError ? ' error' : '');
         bubble.textContent = text;
+
+        if (role === 'bot' && !isError) {
+            const credit = document.createElement('div');
+            credit.style.cssText = 'margin-top:8px;font-size:11px;opacity:0.4;border-top:1px solid var(--glass-border);padding-top:6px;';
+            credit.textContent = '— mannLLM model in use';
+            bubble.appendChild(credit);
+        }
 
         row.appendChild(avatar);
         row.appendChild(bubble);
@@ -422,7 +990,7 @@
 
         const avatar = document.createElement('div');
         avatar.className = 'msg-avatar';
-        avatar.textContent = '🤖';
+        avatar.textContent = 'T';
 
         const bubble = document.createElement('div');
         bubble.className = 'bubble';
@@ -444,6 +1012,7 @@
         if (!prompt || sendBtn.disabled) return;
 
         addMessage('user', prompt);
+        saveChat('user', prompt);
         input.value = '';
         input.style.height = 'auto';
         sendBtn.disabled = true;
@@ -460,6 +1029,7 @@
             const data = await res.json();
             removeTyping();
             addMessage('bot', data.generated_text);
+            saveChat('bot', data.generated_text);
 
         } catch (err) {
             removeTyping();
