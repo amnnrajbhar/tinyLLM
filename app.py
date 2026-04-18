@@ -23,9 +23,12 @@ BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, 'aman_model.pt')
 
 if os.path.exists(MODEL_PATH):
-    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
-    model.eval()
-    print("mannLLM: Loaded pre-trained weights.")
+    try:
+        model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+        model.eval()
+        print("mannLLM: Loaded pre-trained weights.")
+    except RuntimeError as e:
+        print(f"mannLLM: Weight mismatch — starting with random weights. Trigger /api/train to retrain. ({e})")
 else:
     print("mannLLM: No weights found. Please train via /api/train.")
 
