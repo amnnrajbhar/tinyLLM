@@ -1,111 +1,474 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aman's TinyGPT</title>
+    <title>TinyGPT</title>
     <style>
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            max-width: 600px;
-            margin: 40px auto;
-            padding: 0 20px;
-            color: #333;
+        :root {
+            --bg: radial-gradient(ellipse at top left, #1c1c2e, #0a0a0f 60%);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: rgba(255, 255, 255, 0.92);
+            --text-secondary: rgba(255, 255, 255, 0.4);
+            --divider: rgba(255, 255, 255, 0.07);
+            --accent: #6e6aff;
+            --accent-glow: rgba(110, 106, 255, 0.3);
+            --user-bubble: #6e6aff;
+            --user-bubble-text: #fff;
+            --bot-bubble: rgba(255, 255, 255, 0.07);
+            --bot-bubble-text: rgba(255, 255, 255, 0.88);
+            --input-bg: rgba(255, 255, 255, 0.06);
+            --input-border: rgba(255, 255, 255, 0.1);
+            --topbar-bg: rgba(255, 255, 255, 0.04);
         }
-        textarea {
-            width: 100%;
-            height: 100px;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-family: inherit;
-            resize: vertical;
+
+        [data-theme="light"] {
+            --bg: radial-gradient(ellipse at top left, #e8e8f8, #f5f5fa 60%);
+            --glass-bg: rgba(255, 255, 255, 0.5);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --text-primary: rgba(0, 0, 0, 0.85);
+            --text-secondary: rgba(0, 0, 0, 0.4);
+            --divider: rgba(0, 0, 0, 0.06);
+            --accent: #5856d6;
+            --accent-glow: rgba(88, 86, 214, 0.25);
+            --user-bubble: #5856d6;
+            --user-bubble-text: #fff;
+            --bot-bubble: rgba(0, 0, 0, 0.06);
+            --bot-bubble-text: rgba(0, 0, 0, 0.82);
+            --input-bg: rgba(255, 255, 255, 0.7);
+            --input-border: rgba(0, 0, 0, 0.1);
+            --topbar-bg: rgba(255, 255, 255, 0.5);
         }
-        button {
-            padding: 10px 20px;
-            background-color: #0066cc;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            transition: background 0.4s;
+        }
+
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::before { width: 500px; height: 500px; background: #6e6aff; top: -120px; left: -120px; }
+        body::after  { width: 400px; height: 400px; background: #bf5af2; bottom: -80px; right: -80px; }
+
+        /* Layout */
+        .app {
+            position: relative;
+            z-index: 1;
+            height: 100%;
+            max-width: 780px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top bar */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            background: var(--topbar-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--divider);
+            flex-shrink: 0;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #bf5af2);
+            display: flex; align-items: center; justify-content: center;
             font-size: 16px;
+            flex-shrink: 0;
         }
-        button:hover {
-            background-color: #0052a3;
+
+        .topbar-info h2 {
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
         }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
+
+        .topbar-info span {
+            font-size: 11px;
+            color: #30d158;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
-        #response-box {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 4px;
-            min-height: 80px;
+
+        .online-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #30d158;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 5px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.2s;
+        }
+        .toggle-btn:hover { color: var(--text-primary); }
+
+        /* Messages area */
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+        }
+
+        .messages::-webkit-scrollbar { width: 4px; }
+        .messages::-webkit-scrollbar-track { background: transparent; }
+        .messages::-webkit-scrollbar-thumb { background: var(--divider); border-radius: 2px; }
+
+        /* Message row */
+        .msg-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            animation: fadeUp 0.25s ease;
+        }
+
+        .msg-row.user { flex-direction: row-reverse; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-avatar {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px;
+        }
+
+        .msg-row.bot .msg-avatar {
+            background: linear-gradient(135deg, var(--accent), #bf5af2);
+        }
+
+        .msg-row.user .msg-avatar {
+            background: rgba(255,255,255,0.12);
+        }
+
+        .bubble {
+            max-width: 72%;
+            padding: 11px 15px;
+            border-radius: 18px;
+            font-size: 15px;
+            line-height: 1.6;
             white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .msg-row.user .bubble {
+            background: var(--user-bubble);
+            color: var(--user-bubble-text);
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 16px var(--accent-glow);
+        }
+
+        .msg-row.bot .bubble {
+            background: var(--bot-bubble);
+            color: var(--bot-bubble-text);
+            border-bottom-left-radius: 4px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+        }
+
+        .msg-row.bot .bubble.error {
+            color: #ff453a;
+            border-color: rgba(255, 69, 58, 0.3);
+        }
+
+        /* Typing indicator */
+        .typing {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 12px 16px;
+        }
+
+        .typing span {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            animation: bounce 1.2s infinite;
+        }
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-6px); opacity: 1; }
+        }
+
+        /* Input bar */
+        .inputbar {
+            padding: 12px 16px;
+            background: var(--topbar-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--divider);
+            flex-shrink: 0;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 22px;
+            padding: 8px 8px 8px 16px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .input-row:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 15px;
             line-height: 1.5;
+            resize: none;
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 4px 0;
+        }
+
+        textarea::placeholder { color: var(--text-secondary); }
+
+        .send-btn {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 10px var(--accent-glow);
+            transition: opacity 0.2s, transform 0.15s;
+        }
+
+        .send-btn:hover:not(:disabled) { opacity: 0.85; transform: scale(1.05); }
+        .send-btn:active:not(:disabled) { transform: scale(0.95); }
+        .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .send-btn svg { width: 16px; height: 16px; fill: #fff; }
+
+        .footer {
+            text-align: center;
+            padding: 8px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        .footer a { color: var(--accent); text-decoration: none; }
+
+        @media (max-width: 480px) {
+            .bubble { max-width: 85%; }
+            .messages { padding: 16px 12px; }
         }
     </style>
 </head>
 <body>
+<div class="app">
 
-    <h1>Chat with Aman's Custom LLM</h1>
-    <p><em>Running locally via PyTorch & FastAPI</em></p>
-    
-    <textarea id="userInput" placeholder="Type a prompt like 'Aman Rajbhar is...'"></textarea>
-    <br>
-    <button id="sendBtn">Generate</button>
-    
-    <div id="response-box">The model's output will appear here...</div>
+    <!-- Top bar -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <div class="avatar">🤖</div>
+            <div class="topbar-info">
+                <h2>Aman's TinyGPT</h2>
+                <span><span class="online-dot"></span> Online</span>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <button class="toggle-btn" id="themeBtn">
+                <span id="themeIcon">☀️</span>
+                <span id="themeLabel">Light</span>
+            </button>
+        </div>
+    </div>
 
-    <script>
-        // Point this directly to your local FastAPI server
-        // Default Uvicorn port is usually 8000
-        const API_URL = '/api/generate';
+    <!-- Messages -->
+    <div class="messages" id="messages">
+        <div class="msg-row bot">
+            <div class="msg-avatar">🤖</div>
+            <div class="bubble">Hi! I'm Aman's personal AI. Ask me anything about Aman — his skills, projects, or experience. 👋</div>
+        </div>
+    </div>
 
-        const inputField = document.getElementById('userInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const responseBox = document.getElementById('response-box');
+    <!-- Input bar -->
+    <div class="inputbar">
+        <div class="input-row">
+            <textarea id="userInput" rows="1" placeholder="Ask about Aman..."></textarea>
+            <button class="send-btn" id="sendBtn">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
 
-        sendBtn.addEventListener('click', async () => {
-            const userText = inputField.value.trim();
-            if (!userText) return;
+    <div class="footer">
+        © 2025 <a href="https://amnnrajbhar.github.io/info/" target="_blank">Aman Rajbhar</a>. All rights reserved.
+    </div>
 
-            responseBox.textContent = "Generating...";
-            sendBtn.disabled = true;
+</div>
 
-            try {
-                // Notice: No API key or Authorization headers needed!
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        prompt: userText,
-                        max_tokens: 150 
-                    })
-                });
+<script>
+    const API_URL   = '/api/generate';
+    const messages  = document.getElementById('messages');
+    const input     = document.getElementById('userInput');
+    const sendBtn   = document.getElementById('sendBtn');
+    const themeBtn  = document.getElementById('themeBtn');
+    const themeIcon = document.getElementById('themeIcon');
+    const themeLabel= document.getElementById('themeLabel');
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+    // Auto-resize textarea
+    input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+    });
 
-                const data = await response.json();
-                
-                // Extract the generated text based on the FastAPI response format
-                responseBox.textContent = data.generated_text;
+    // Send on Enter (Shift+Enter for newline)
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    });
 
-            } catch (error) {
-                responseBox.textContent = "Error: Could not connect to the model. Is your FastAPI server running?\n\nDetails: " + error.message;
-                console.error("Fetch Error:", error);
-            } finally {
-                sendBtn.disabled = false;
-            }
-        });
-    </script>
+    sendBtn.addEventListener('click', send);
+
+    // Theme
+    let isDark = true;
+    themeBtn.addEventListener('click', () => {
+        isDark = !isDark;
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        themeIcon.textContent  = isDark ? '☀️' : '🌙';
+        themeLabel.textContent = isDark ? 'Light' : 'Dark';
+    });
+
+    function addMessage(role, text, isError = false) {
+        const row = document.createElement('div');
+        row.className = `msg-row ${role}`;
+
+        const avatar = document.createElement('div');
+        avatar.className = 'msg-avatar';
+        avatar.textContent = role === 'user' ? '🧑' : '🤖';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble' + (isError ? ' error' : '');
+        bubble.textContent = text;
+
+        row.appendChild(avatar);
+        row.appendChild(bubble);
+        messages.appendChild(row);
+        messages.scrollTop = messages.scrollHeight;
+        return bubble;
+    }
+
+    function showTyping() {
+        const row = document.createElement('div');
+        row.className = 'msg-row bot';
+        row.id = 'typing-row';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'msg-avatar';
+        avatar.textContent = '🤖';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+
+        row.appendChild(avatar);
+        row.appendChild(bubble);
+        messages.appendChild(row);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    function removeTyping() {
+        const el = document.getElementById('typing-row');
+        if (el) el.remove();
+    }
+
+    async function send() {
+        const prompt = input.value.trim();
+        if (!prompt || sendBtn.disabled) return;
+
+        addMessage('user', prompt);
+        input.value = '';
+        input.style.height = 'auto';
+        sendBtn.disabled = true;
+        showTyping();
+
+        try {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt, max_tokens: 150 })
+            });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            removeTyping();
+            addMessage('bot', data.generated_text);
+
+        } catch (err) {
+            removeTyping();
+            addMessage('bot', 'Could not reach the server. Is it running?\n' + err.message, true);
+        } finally {
+            sendBtn.disabled = false;
+            input.focus();
+        }
+    }
+</script>
 </body>
 </html>
