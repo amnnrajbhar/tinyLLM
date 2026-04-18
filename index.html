@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aman's TinyGPT</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 0 20px;
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
+            resize: vertical;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0052a3;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #response-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            min-height: 80px;
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Chat with Aman's Custom LLM</h1>
+    <p><em>Running locally via PyTorch & FastAPI</em></p>
+    
+    <textarea id="userInput" placeholder="Type a prompt like 'Aman Rajbhar is...'"></textarea>
+    <br>
+    <button id="sendBtn">Generate</button>
+    
+    <div id="response-box">The model's output will appear here...</div>
+
+    <script>
+        // Point this directly to your local FastAPI server
+        // Default Uvicorn port is usually 8000
+        const API_URL = '/api/generate';
+
+        const inputField = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const responseBox = document.getElementById('response-box');
+
+        sendBtn.addEventListener('click', async () => {
+            const userText = inputField.value.trim();
+            if (!userText) return;
+
+            responseBox.textContent = "Generating...";
+            sendBtn.disabled = true;
+
+            try {
+                // Notice: No API key or Authorization headers needed!
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: userText,
+                        max_tokens: 150 
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Extract the generated text based on the FastAPI response format
+                responseBox.textContent = data.generated_text;
+
+            } catch (error) {
+                responseBox.textContent = "Error: Could not connect to the model. Is your FastAPI server running?\n\nDetails: " + error.message;
+                console.error("Fetch Error:", error);
+            } finally {
+                sendBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
